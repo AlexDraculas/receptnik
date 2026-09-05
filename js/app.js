@@ -36,7 +36,7 @@ elTabManual.addEventListener("click", function(){ switchTab("manual"); });
 elTabLink.addEventListener("click", function(){ switchTab("link"); });
 
 elLoading.hidden = false;
-Promise.all([loadLang(), loadTheme(), loadStats(), loadProfile()]).then(function(){
+Promise.all([loadLang(), loadTheme(), loadStats(), loadProfile(), loadAuth()]).then(function(){
   applyI18n();
   return loadRecipes();
 }).then(function(){
@@ -44,6 +44,10 @@ Promise.all([loadLang(), loadTheme(), loadStats(), loadProfile()]).then(function
   applyI18n();
   updateStreakBadge();
   showLibrary();
+  renderAccountState();
+  return authToken ? syncPull() : Promise.resolve();
+}).then(function(){
+  syncBootDone = true;
 });
 
 setInterval(function(){

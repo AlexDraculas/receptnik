@@ -7,6 +7,7 @@ function renderProfile(){
   elAvatarBtn.textContent = profile.avatar || "🧑‍🍳";
   elProfileName.value = profile.name || "";
   renderOauthState();
+  renderAccountState();
 }
 elAvatarBtn.addEventListener("click", function(){
   var idx = AVATAR_OPTIONS.indexOf(profile.avatar);

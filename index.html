@@ -160,7 +160,58 @@
       <div class="rn-profile-card">
         <button class="rn-avatar" id="rnAvatarBtn" title="Смени аватара">🧑‍🍳</button>
         <input type="text" id="rnProfileName" class="rn-profile-name-input" data-i18n-ph="profileNamePlaceholder" placeholder="Твоето име">
-        <div class="rn-profile-hint" data-i18n="profileHint">Профилът е локален — запазва се само за теб на това устройство.</div>
+        <div class="rn-profile-hint" data-i18n="profileHint">Профилът и рецептите се пазят на това устройство, освен ако не влезеш с акаунт по-долу.</div>
+      </div>
+
+      <div class="rn-account-card" id="rnAccountCard">
+        <div id="rnAccountLoggedOut">
+          <div class="rn-account-heading" data-i18n="accountHeading">Акаунт и синхронизация</div>
+          <div class="rn-account-hint" data-i18n="accountHint">Направи си акаунт с имейл и парола, за да виждаш едни и същи рецепти, количка и статистика на всяко устройство.</div>
+          <div class="rn-tabbar">
+            <button type="button" class="rn-tabbtn is-active" id="rnAccountTabLogin" data-i18n="accountTabLogin">Вход</button>
+            <button type="button" class="rn-tabbtn" id="rnAccountTabRegister" data-i18n="accountTabRegister">Регистрация</button>
+          </div>
+
+          <form id="rnLoginForm" class="rn-account-form">
+            <input type="email" id="rnLoginEmail" class="rn-account-input" data-i18n-ph="accountEmailPlaceholder" placeholder="имейл@пример.com" autocomplete="email" required>
+            <input type="password" id="rnLoginPassword" class="rn-account-input" data-i18n-ph="accountPasswordPlaceholder" placeholder="Парола" autocomplete="current-password" required>
+            <button type="submit" class="rn-3d c-mint rn-account-submit" id="rnLoginSubmitBtn" data-i18n="accountLoginBtn">Влез</button>
+            <button type="button" class="rn-account-link" id="rnForgotPasswordLink" data-i18n="accountForgotLink">Забравена парола?</button>
+          </form>
+
+          <form id="rnRegisterForm" class="rn-account-form" hidden>
+            <input type="email" id="rnRegisterEmail" class="rn-account-input" data-i18n-ph="accountEmailPlaceholder" placeholder="имейл@пример.com" autocomplete="email" required>
+            <input type="password" id="rnRegisterPassword" class="rn-account-input" data-i18n-ph="accountPasswordPlaceholderNew" placeholder="Парола (мин. 8 символа)" autocomplete="new-password" required>
+            <input type="password" id="rnRegisterPasswordConfirm" class="rn-account-input" data-i18n-ph="accountPasswordConfirmPlaceholder" placeholder="Повтори паролата" autocomplete="new-password" required>
+            <button type="submit" class="rn-3d c-mint rn-account-submit" id="rnRegisterSubmitBtn" data-i18n="accountRegisterBtn">Регистрирай се</button>
+          </form>
+
+          <form id="rnForgotForm" class="rn-account-form" hidden>
+            <div class="rn-account-hint" data-i18n="accountForgotStep1Hint">Ще ти пратим код по имейл.</div>
+            <input type="email" id="rnForgotEmail" class="rn-account-input" data-i18n-ph="accountEmailPlaceholder" placeholder="имейл@пример.com" autocomplete="email" required>
+            <button type="submit" class="rn-3d c-white rn-account-submit" id="rnForgotSendBtn" data-i18n="accountSendCodeBtn">Изпрати код</button>
+            <button type="button" class="rn-account-link" id="rnForgotBackLink1" data-i18n="accountBackToLogin">← Обратно към вход</button>
+          </form>
+
+          <form id="rnResetForm" class="rn-account-form" hidden>
+            <div class="rn-account-hint" data-i18n="accountForgotStep2Hint">Провери имейла си за 6-цифрен код (важи 15 мин).</div>
+            <input type="text" id="rnResetCode" class="rn-account-input" inputmode="numeric" maxlength="6" data-i18n-ph="accountCodePlaceholder" placeholder="Код от имейла" required>
+            <input type="password" id="rnResetPassword" class="rn-account-input" data-i18n-ph="accountPasswordPlaceholderNew" placeholder="Нова парола (мин. 8 символа)" autocomplete="new-password" required>
+            <button type="submit" class="rn-3d c-mint rn-account-submit" id="rnResetSubmitBtn" data-i18n="accountResetBtn">Смени паролата</button>
+            <button type="button" class="rn-account-link" id="rnForgotBackLink2" data-i18n="accountBackToLogin">← Обратно към вход</button>
+          </form>
+
+          <div class="rn-account-status" id="rnAccountStatus" hidden></div>
+        </div>
+
+        <div class="rn-account-signedin" id="rnAccountSignedIn" hidden>
+          <div class="rn-account-signedin-text">
+            <div class="rn-oauth-name" data-i18n="accountSignedInAs">Влязъл си с акаунт:</div>
+            <div class="rn-oauth-email" id="rnAccountEmail"></div>
+            <div class="rn-account-sync-status" id="rnAccountSyncStatus"></div>
+          </div>
+          <button type="button" class="rn-3d c-white rn-oauth-signout-btn" id="rnAccountLogoutBtn" data-i18n="signOutBtn">Изход</button>
+        </div>
       </div>
 
       <div class="rn-oauth-row" id="rnOauthButtons">
@@ -301,6 +352,7 @@
   <script src="js/recipes/search.js"></script>
   <script src="js/recipes/add-recipe.js"></script>
   <script src="js/core/google-auth.js"></script>
+  <script src="js/core/account.js"></script>
   <script src="js/profile/profile.js"></script>
   <script src="js/cooking/cooking.js"></script>
   <script src="js/app.js"></script>

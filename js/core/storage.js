@@ -29,6 +29,7 @@ function loadStats(){
   }).catch(function(){ stats = { streak:0, lastCookAt:null, streakCreditDate:null, totalCooked:0 }; });
 }
 function saveStats(){
+  if(typeof queueSync === "function") queueSync();
   return window.storage.set("app-stats", JSON.stringify(stats), false).catch(function(){});
 }
 function loadProfile(){
@@ -38,6 +39,7 @@ function loadProfile(){
   }).catch(function(){});
 }
 function saveProfile(){
+  if(typeof queueSync === "function") queueSync();
   return window.storage.set("app-profile", JSON.stringify(profile), false).catch(function(){});
 }
 function todayKey(){
@@ -74,6 +76,7 @@ function loadRecipes(){
   });
 }
 function saveRecipes(){
+  if(typeof queueSync === "function") queueSync();
   return window.storage.set("recipes-library", JSON.stringify(recipes), false).catch(function(err){
     console.error("Save failed:", err);
   });

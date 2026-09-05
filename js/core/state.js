@@ -24,6 +24,13 @@ var elCartList = $("rnCartList"), elCartEmpty = $("rnCartEmpty"), elSortCart = $
 var elAvatarBtn = $("rnAvatarBtn"), elProfileName = $("rnProfileName");
 var elGoogleBtn = $("rnGoogleBtn"), elAppleBtn = $("rnAppleBtn"), elOauthNote = $("rnOauthNote");
 var elOauthSignedIn = $("rnOauthSignedIn"), elGoogleAvatarImg = $("rnGoogleAvatarImg"), elGoogleName = $("rnGoogleName"), elGoogleEmail = $("rnGoogleEmail"), elGoogleSignOutBtn = $("rnGoogleSignOutBtn");
+var elAccountLoggedOut = $("rnAccountLoggedOut"), elAccountSignedIn = $("rnAccountSignedIn"), elAccountEmail = $("rnAccountEmail"), elAccountSyncStatus = $("rnAccountSyncStatus"), elAccountLogoutBtn = $("rnAccountLogoutBtn");
+var elAccountTabLogin = $("rnAccountTabLogin"), elAccountTabRegister = $("rnAccountTabRegister");
+var elLoginForm = $("rnLoginForm"), elLoginEmail = $("rnLoginEmail"), elLoginPassword = $("rnLoginPassword"), elLoginSubmitBtn = $("rnLoginSubmitBtn");
+var elRegisterForm = $("rnRegisterForm"), elRegisterEmail = $("rnRegisterEmail"), elRegisterPassword = $("rnRegisterPassword"), elRegisterPasswordConfirm = $("rnRegisterPasswordConfirm"), elRegisterSubmitBtn = $("rnRegisterSubmitBtn");
+var elForgotPasswordLink = $("rnForgotPasswordLink"), elForgotForm = $("rnForgotForm"), elForgotEmail = $("rnForgotEmail"), elForgotSendBtn = $("rnForgotSendBtn"), elForgotBackLink1 = $("rnForgotBackLink1");
+var elResetForm = $("rnResetForm"), elResetCode = $("rnResetCode"), elResetPassword = $("rnResetPassword"), elResetSubmitBtn = $("rnResetSubmitBtn"), elForgotBackLink2 = $("rnForgotBackLink2");
+var elAccountStatus = $("rnAccountStatus");
 var elLangBg = $("rnLangBg"), elLangEn = $("rnLangEn");
 var elThemeBtn = $("rnThemeBtn");
 var elForm = $("rnForm");
