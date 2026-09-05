@@ -66,6 +66,7 @@ function renderCardsInto(container, list, emptyEl, mode){
     var card = document.createElement("div");
     card.className = "rn-card" + (openCardId === r.id ? " is-open" : "") + (mode === "cart" ? " is-cart" : "");
     card.style.animationDelay = (i*0.04)+"s";
+    card.dataset.id = r.id;
 
     var head = document.createElement("div");
     head.className = "rn-card-head";
@@ -93,7 +94,7 @@ function renderCardsInto(container, list, emptyEl, mode){
     } else {
       dropIn.innerHTML =
         '<p class="rn-card-desc">'+escapeHtml(r.description || "—")+'</p>' +
-        '<div class="rn-card-time">⏱ '+escapeHtml(r.time || "—")+' · '+stepsLabel(r.steps.length)+'</div>';
+        '<div class="rn-card-time"><span>⏱ '+escapeHtml(r.time || "—")+'</span><span>· '+stepsLabel(r.steps.length)+'</span><span>· 📊 '+escapeHtml(difficultyLabel(r.difficulty))+'</span></div>';
       var ratingRow = document.createElement("div");
       ratingRow.className = "rn-my-rating";
       var ratingLabel = document.createElement("span");
@@ -127,7 +128,75 @@ function renderCardsInto(container, list, emptyEl, mode){
   });
 }
 
+// ---------- home dashboard: greeting / popular-recipes row / progress row ----------
+// These live at the top of the Library view (per the redesign brief, no new
+// nav destination was added — this just makes the existing Library screen
+// feel like a home dashboard). Clicking a hero card opens that same recipe's
+// accordion further down; clicking the progress row jumps to the full Profile.
+
+function renderHomeGreeting(){
+  if(!elHomeGreeting) return;
+  var name = profile && profile.name ? profile.name.trim() : "";
+  elHomeGreeting.innerHTML = name
+    ? escapeHtml(t("homeGreetingHi")) + ", <b>" + escapeHtml(name) + "</b>! 👋"
+    : escapeHtml(t("homeGreetingNoName"));
+}
+
+function renderHeroRow(){
+  if(!elHeroRow) return;
+  var picks = recipes.slice().sort(function(a,b){
+    var d = (b.myRating||0) - (a.myRating||0);
+    return d !== 0 ? d : (b.dateAdded - a.dateAdded);
+  }).slice(0, 8);
+  elHeroRow.innerHTML = "";
+  if(elHeroSection) elHeroSection.hidden = picks.length === 0;
+  picks.forEach(function(r, i){
+    var card = document.createElement("div");
+    card.className = "rn-hero-card";
+    card.style.animationDelay = (i*0.04)+"s";
+    var pct = Math.max(0, Math.min(5, r.myRating||0)) / 5 * 100;
+    card.innerHTML =
+      '<div class="rn-hero-tile" style="background:'+cuisineColor(r.cuisine)+'">'+cuisineEmoji(r.cuisine)+
+        (r.favorite ? '<span class="rn-hero-fav">❤️</span>' : '') +
+      '</div>' +
+      '<div class="rn-hero-body">' +
+        '<p class="rn-hero-name">'+escapeHtml(r.name)+'</p>' +
+        '<div class="rn-hero-meta">' +
+          (r.myRating ? '<span class="rn-stars" style="--pct:'+pct+'%">★★★★★</span>' : '') +
+          '<span>⏱ '+escapeHtml(r.time || "—")+'</span>' +
+          '<span>· '+escapeHtml(difficultyLabel(r.difficulty))+'</span>' +
+        '</div>' +
+      '</div>';
+    card.addEventListener("click", function(){
+      openCardId = r.id;
+      renderLibrary();
+      requestAnimationFrame(function(){
+        var target = elList.querySelector('[data-id="'+r.id.replace(/"/g,'')+'"]');
+        if(target) target.scrollIntoView({ behavior:"smooth", block:"center" });
+      });
+    });
+    elHeroRow.appendChild(card);
+  });
+}
+
+function renderProgressRow(){
+  if(!elProgressRow) return;
+  var favCount = recipes.filter(function(r){ return r.favorite; }).length;
+  var frozen = isStreakFrozen();
+  elProgressRow.innerHTML =
+    '<div class="rn-progress-tile"><div class="rn-progress-icon-wrap" style="background:#FFE9D2;">'+(frozen?'🥶':'🔥')+'</div>' +
+      '<div class="rn-progress-num">'+(stats.streak||0)+'</div><div class="rn-progress-label">'+escapeHtml(t("progressStreak"))+'</div></div>' +
+    '<div class="rn-progress-tile"><div class="rn-progress-icon-wrap" style="background:var(--lavender-2);">👩‍🍳</div>' +
+      '<div class="rn-progress-num">'+(stats.totalCooked||0)+'</div><div class="rn-progress-label">'+escapeHtml(t("progressCooked"))+'</div></div>' +
+    '<div class="rn-progress-tile"><div class="rn-progress-icon-wrap" style="background:#FFE1E9;">❤️</div>' +
+      '<div class="rn-progress-num">'+favCount+'</div><div class="rn-progress-label">'+escapeHtml(t("progressFavorites"))+'</div></div>';
+  elProgressRow.onclick = function(){ showView("stats"); };
+}
+
 function renderLibrary(){
+  renderHomeGreeting();
+  renderHeroRow();
+  renderProgressRow();
   renderFilterChips();
   renderSortToggle(elSortLibrary, renderLibrary);
 
@@ -159,3 +228,8 @@ elFavToggle.addEventListener("click", function(){
   filters.favoritesOnly = !filters.favoritesOnly;
   renderLibrary();
 });
+if(elHeroSeeAll){
+  elHeroSeeAll.addEventListener("click", function(){
+    elFavToggle.scrollIntoView({ behavior:"smooth", block:"start" });
+  });
+}

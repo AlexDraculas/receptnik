@@ -206,6 +206,8 @@ function populateFormFromImported(data){
   } else {
     elStyleSel.value = "Друго"; elStyleOtherWrap.style.display = "block"; elStyleOther.value = data.style || "";
   }
+  selectedDifficulty = DIFFICULTIES.indexOf(data.difficulty) > -1 ? data.difficulty : "Средна";
+  renderDifficultyRow();
 
   elIngList.innerHTML = "";
   (data.ingredients || []).forEach(function(ing){ addIngredientRow(ing); });
@@ -224,8 +226,8 @@ function importRecipeFromUrl(url, hintTitle){
   var prompt = "Here is a link to a recipe page or video: " + url + "\n" + hintLine +
     "Search the web and read this recipe (dish, ingredients, quantities, steps). If you can't access this exact page, make your best-informed guess from the URL/title and similar well-known recipes for this dish.\n" +
     "Return ONLY valid JSON, no markdown, no explanation, in this exact shape:\n" +
-    '{"name":"...","cuisine":"one of: '+CUISINES.join(", ")+'","style":"one of: '+STYLES.join(", ")+'","description":"short, under 20 words","time":"total time, e.g. \'35 min\'","ingredients":["..."],"steps":[{"text":"short imperative instruction","timerMinutes":null,"timerType":null}]}\n' +
-    "IMPORTANT — every field must be filled in, never leave anything blank or null except timerMinutes/timerType: pick the closest matching \"cuisine\" and \"style\" even if you have to guess, write a real \"description\" and a realistic \"time\" estimate, and include actual quantities in each ingredient. Never write placeholders like 'unknown' or 'N/A' — always give your best concrete answer instead.\n" +
+    '{"name":"...","cuisine":"one of: '+CUISINES.join(", ")+'","style":"one of: '+STYLES.join(", ")+'","difficulty":"one of: '+DIFFICULTIES.join(", ")+'","description":"short, under 20 words","time":"total time, e.g. \'35 min\'","ingredients":["..."],"steps":[{"text":"short imperative instruction","timerMinutes":null,"timerType":null}]}\n' +
+    "IMPORTANT — every field must be filled in, never leave anything blank or null except timerMinutes/timerType: pick the closest matching \"cuisine\" and \"style\" even if you have to guess, judge \"difficulty\" realistically from the number/complexity of steps and techniques involved, write a real \"description\" and a realistic \"time\" estimate, and include actual quantities in each ingredient. Never write placeholders like 'unknown' or 'N/A' — always give your best concrete answer instead.\n" +
     "Write name/description/ingredients/steps in " + contentLang + ". The \"cuisine\" and \"style\" values themselves must stay exactly one of the listed options (fixed category names, do not translate them). No more than 12 ingredients and 8 steps. Set timerMinutes and timerType ONLY on steps that involve baking, frying, freezing, resting/setting, or proofing dough — timerType must then be exactly one of \"bake\", \"fry\", \"freeze\", \"rest\", \"proof\". On every other step both must be null.";
 
   return fetch(AI_PROXY_URL, {
