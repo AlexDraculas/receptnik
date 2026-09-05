@@ -1,4 +1,4 @@
-// Cloudflare Worker: the Рецептник app's small server piece. Two jobs:
+// Cloudflare Worker: the Cookly app's small server piece. Two jobs:
 //
 // 1) AI proxy (unchanged from before) — holds the real Anthropic API key
 //    server-side and forwards the app's three AI features (dish search,
@@ -215,11 +215,11 @@ async function sendResetEmail(env, toEmail, code) {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: "Bearer " + env.RESEND_API_KEY },
     body: JSON.stringify({
-      from: "Рецептник <onboarding@resend.dev>",
+      from: "Cookly <onboarding@resend.dev>",
       to: [toEmail],
-      subject: "Код за нова парола — Рецептник",
+      subject: "Код за нова парола — Cookly",
       html:
-        "<p>Ето кода за смяна на паролата ти в Рецептника:</p>" +
+        "<p>Ето кода за смяна на паролата ти в Cookly:</p>" +
         '<p style="font-size:28px; font-weight:800; letter-spacing:4px;">' + code + "</p>" +
         "<p>Кодът важи 15 минути. Ако не си поискал/а това, просто игнорирай имейла.</p>",
     }),

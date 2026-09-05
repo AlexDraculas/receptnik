@@ -95,6 +95,7 @@ function migrateFavorites(list){
   return list.map(function(r){
     if(typeof r.favorite !== "boolean") r.favorite = false;
     if(typeof r.myRating !== "number") r.myRating = 0;
+    if(DIFFICULTIES.indexOf(r.difficulty) === -1) r.difficulty = "Средна";
     return r;
   });
 }

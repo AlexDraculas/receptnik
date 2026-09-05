@@ -15,6 +15,7 @@ var notifAsked = false;
 
 var $ = function(id){ return document.getElementById(id); };
 var elList = $("rnList"), elEmpty = $("rnEmpty"), elCount = $("rnCount"), elLoading = $("rnLoading");
+var elHomeGreeting = $("rnHomeGreeting"), elHeroSection = $("rnHeroSection"), elHeroRow = $("rnHeroRow"), elHeroSeeAll = $("rnHeroSeeAll"), elProgressRow = $("rnProgressRow");
 var elEmptyTitle = $("rnEmptyTitle"), elEmptyBody = $("rnEmptyBody");
 var elFavToggle = $("rnFavToggle"), elFavToggleIcon = $("rnFavToggleIcon"), elFavToggleLabel = $("rnFavToggleLabel");
 var elChipsCuisine = $("rnChipsCuisine"), elChipsStyle = $("rnChipsStyle"), elSortLibrary = $("rnSortLibrary");

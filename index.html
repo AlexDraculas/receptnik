@@ -3,14 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Рецептник — готви стъпка по стъпка</title>
-<meta name="description" content="Рецептник: рецепти стъпка по стъпка с таймери, любими и лична колекция.">
-<meta name="theme-color" content="#4A2FB0">
+<title>Cookly — готви стъпка по стъпка</title>
+<meta name="description" content="Cookly: рецепти стъпка по стъпка с таймери, любими и лична колекция. Cook it. Track it. Love it.">
+<meta name="theme-color" content="#6C4FE0">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Рецептник">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8D%B3%3C/text%3E%3C/svg%3E">
+<meta name="apple-mobile-web-app-title" content="Cookly">
+<link rel="shortcut icon" href="assets/brand/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/brand/cookly-icon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/brand/cookly-icon-192.png">
+<link rel="apple-touch-icon" href="assets/brand/cookly-icon-180.png">
 <link rel="stylesheet" href="css/style.css">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -19,7 +22,7 @@
 <div class="rn-root" id="rnRoot">
   <div class="rn-topbar">
     <div class="rn-brand">
-      <div class="rn-brand-icon">🍳</div>
+      <div class="rn-brand-icon"><img src="assets/brand/cookly-icon-96.png" alt="Cookly" width="42" height="42"></div>
       <div style="min-width:0;"><h1 id="rnTitle" data-i18n="brandTitle">Рецептник</h1><span id="rnCount"></span></div>
     </div>
     <div class="rn-actions">
@@ -34,6 +37,21 @@
   <div class="rn-stage">
     <!-- LIBRARY -->
     <section id="rnViewLibrary">
+      <div class="rn-home-greeting" id="rnHomeGreeting"></div>
+
+      <div id="rnHeroSection">
+        <div class="rn-section-head">
+          <span class="rn-section-title" data-i18n="heroPopularTitle">Популярни рецепти</span>
+          <button type="button" class="rn-section-seeall" id="rnHeroSeeAll" data-i18n="seeAllCta">Виж всички</button>
+        </div>
+        <div class="rn-hero-row" id="rnHeroRow"></div>
+      </div>
+
+      <div class="rn-section-head">
+        <span class="rn-section-title" data-i18n="heroProgressTitle">Моят прогрес</span>
+      </div>
+      <div class="rn-progress-row" id="rnProgressRow"></div>
+
       <button type="button" class="rn-fav-toggle" id="rnFavToggle">
         <span class="rn-fav-toggle-icon" id="rnFavToggleIcon">🤍</span>
         <span id="rnFavToggleLabel">Любими</span>
@@ -109,6 +127,10 @@
           <div class="rn-field">
             <label data-i18n="formTimeLabel">Общо време (за показване)</label>
             <input type="text" id="rnTime" data-i18n-ph="formTimePlaceholder" placeholder="напр. 45 мин">
+          </div>
+          <div class="rn-field">
+            <label data-i18n="formDifficultyLabel">Трудност</label>
+            <div class="rn-difficulty-row" id="rnDifficultyRow"></div>
           </div>
 
           <div class="rn-subhead" data-i18n="subheadIngredients">🧺 Продукти</div>

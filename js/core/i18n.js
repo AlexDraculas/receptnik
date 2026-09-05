@@ -7,8 +7,14 @@ var THEME = "light";
 
 var I18N = {
   bg:{
-    brandTitle:"Рецептник",
+    brandTitle:"Cookly",
+    brandTagline:"Cook it. Track it. Love it.",
     tooltipAdd:"Добави рецепта", tooltipLibrary:"Моите рецепти",
+    heroPopularTitle:"Популярни рецепти", heroProgressTitle:"Моят прогрес", seeAllCta:"Виж всички",
+    homeGreetingHi:"Добър ден", homeGreetingNoName:"Добър ден! 👋",
+    progressStreak:"дни серия", progressCooked:"сготвени", progressFavorites:"любими",
+    formDifficultyLabel:"Трудност",
+    difficultyEasy:"Лесна", difficultyMedium:"Средна", difficultyHard:"Трудна",
     filterCuisineLabel:"Кухня", filterStyleLabel:"Стил",
     chipAllCuisines:"🌍 Всички", chipAllStyles:"🎲 Всички",
     sortLabel:"Подредба", sortRecent:"🕐 Скорошни", sortRating:"⭐ Оценка",
@@ -82,8 +88,14 @@ var I18N = {
     accountErrGeneric:"Нещо се обърка. Опитай пак.", accountLogoutConfirm:"Излязъл си от акаунта. Рецептите остават запазени на това устройство."
   },
   en:{
-    brandTitle:"Recipe Book",
+    brandTitle:"Cookly",
+    brandTagline:"Cook it. Track it. Love it.",
     tooltipAdd:"Add recipe", tooltipLibrary:"My recipes",
+    heroPopularTitle:"Popular recipes", heroProgressTitle:"My progress", seeAllCta:"See all",
+    homeGreetingHi:"Good day", homeGreetingNoName:"Good day! 👋",
+    progressStreak:"day streak", progressCooked:"cooked", progressFavorites:"favorites",
+    formDifficultyLabel:"Difficulty",
+    difficultyEasy:"Easy", difficultyMedium:"Medium", difficultyHard:"Hard",
     filterCuisineLabel:"Cuisine", filterStyleLabel:"Style",
     chipAllCuisines:"🌍 All", chipAllStyles:"🎲 All",
     sortLabel:"Sort by", sortRecent:"🕐 Recent", sortRating:"⭐ Rating",
@@ -174,6 +186,12 @@ var STYLE_EN = {
 function cuisineLabel(v){ return LANG==="en" ? (CUISINE_EN[v] || v) : v; }
 function styleLabel(v){ return LANG==="en" ? (STYLE_EN[v] || v) : v; }
 
+// Canonical difficulty values always stay Bulgarian internally (same pattern
+// as CUISINES/STYLES above) — difficultyLabel() translates for display.
+var DIFFICULTIES = ["Лесна","Средна","Трудна"];
+var DIFFICULTY_KEY = { "Лесна":"difficultyEasy", "Средна":"difficultyMedium", "Трудна":"difficultyHard" };
+function difficultyLabel(v){ return t(DIFFICULTY_KEY[v] || DIFFICULTY_KEY["Средна"]); }
+
 var CUISINE_EMOJI = {
   "Италианска":"🍝","Френска":"🥐","Китайска":"🥡","Японска":"🍣","Индийска":"🍛","Мексиканска":"🌮",
   "Испанска":"🥘","Гръцка":"🥙","Турска":"🧆","Българска":"🥗","Американска":"🍔","Тайландска":"🍜",
@@ -229,6 +247,7 @@ var SEED_RECIPE = {
   name: "Гарлик пармезан бомбички с кайма",
   cuisine: "Американска",
   style: "Печене",
+  difficulty: "Средна",
   description: "Топчета от меко тесто, пълнени с кайма и чедър, намазани с чесново-пармезаново масло.",
   time: "50 мин",
   dateAdded: Date.now() - 1000,
@@ -262,6 +281,7 @@ function applyI18n(){
   fillSelectTranslated(elCuisineSel, CUISINES, cuisineLabel);
   fillSelectTranslated(elStyleSel, STYLES, styleLabel);
   if(elCount) elCount.textContent = recipes.length ? countLabel(recipes.length) : "";
+  if(typeof renderDifficultyRow === "function") renderDifficultyRow();
   applyTheme();
 }
 

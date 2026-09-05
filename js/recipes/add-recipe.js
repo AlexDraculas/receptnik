@@ -45,6 +45,22 @@ function addStepRow(prefill){
   elStepList.appendChild(row);
 }
 
+var selectedDifficulty = "Средна";
+function renderDifficultyRow(){
+  var el = $("rnDifficultyRow");
+  if(!el) return;
+  if(DIFFICULTIES.indexOf(selectedDifficulty) === -1) selectedDifficulty = "Средна";
+  el.innerHTML = "";
+  DIFFICULTIES.forEach(function(v){
+    var pill = document.createElement("button");
+    pill.type = "button";
+    pill.className = "rn-difficulty-pill" + (selectedDifficulty === v ? " is-active" : "");
+    pill.textContent = (selectedDifficulty === v ? "✓ " : "") + difficultyLabel(v);
+    pill.addEventListener("click", function(){ selectedDifficulty = v; renderDifficultyRow(); });
+    el.appendChild(pill);
+  });
+}
+
 function renumberSteps(){
   elStepList.querySelectorAll(".rn-step-row").forEach(function(row, i){
     row.querySelector(".rn-step-num").textContent = t("stepNumLabel") + " " + (i+1);
@@ -61,6 +77,8 @@ function resetForm(){
   addStepRow(); addStepRow();
   elCuisineOtherWrap.style.display = "none";
   elStyleOtherWrap.style.display = "none";
+  selectedDifficulty = "Средна";
+  renderDifficultyRow();
   elLinkUrl.value = "";
   elLinkStatus.className = "rn-link-status";
   elLinkStatus.textContent = "";
@@ -108,7 +126,7 @@ elForm.addEventListener("submit", function(e){
 
   var recipe = {
     id: "r-" + Date.now() + "-" + Math.random().toString(36).slice(2,8),
-    name: name, cuisine: cuisine, style: style,
+    name: name, cuisine: cuisine, style: style, difficulty: selectedDifficulty,
     description: $("rnDesc").value.trim(), time: $("rnTime").value.trim(),
     dateAdded: Date.now(), ingredients: ingredients, steps: steps,
     favorite: false, myRating: 0
