@@ -60,7 +60,8 @@ var I18N = {
     streakFrozenLabel:"замразена серия 🥶", streakFrozenHint:"Сготви нещо днес, за да я запазиш!",
     profileNamePlaceholder:"Твоето име", profileHint:"Профилът е локален — запазва се само за теб на това устройство.",
     signInGoogle:"Вход с Google", signInApple:"Вход с Apple",
-    oauthNote:"Този сайт е самостоятелен файл без сървър, затова истински вход с Google/Apple не е възможен тук. Профилът по-горе се пази локално вместо него."
+    oauthNote:"Вход с Apple предстои — засега работи само Google. Профилът по-горе продължава да се пази локално, ако не влезеш.",
+    signOutBtn:"Изход", googleSignInError:"Влизането с Google не бе успешно. Опитай пак."
   },
   en:{
     brandTitle:"Recipe Book",
@@ -116,7 +117,8 @@ var I18N = {
     streakFrozenLabel:"streak frozen 🥶", streakFrozenHint:"Cook something today to keep it alive!",
     profileNamePlaceholder:"Your name", profileHint:"This profile is local — it's saved only for you on this device.",
     signInGoogle:"Sign in with Google", signInApple:"Sign in with Apple",
-    oauthNote:"This site is a standalone file with no server, so real Google/Apple sign-in isn't possible here. The profile above is saved locally instead."
+    oauthNote:"Apple sign-in is coming later — only Google works for now. The profile above still saves locally if you don't sign in.",
+    signOutBtn:"Sign out", googleSignInError:"Google sign-in didn't work. Please try again."
   }
 };
 function t(key){ return (I18N[LANG] && I18N[LANG][key]) || (I18N.bg[key] || key); }

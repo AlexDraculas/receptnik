@@ -6,6 +6,7 @@ var AVATAR_OPTIONS = ["🧑‍🍳","👩‍🍳","👨‍🍳","🐱","🐶","�
 function renderProfile(){
   elAvatarBtn.textContent = profile.avatar || "🧑‍🍳";
   elProfileName.value = profile.name || "";
+  renderOauthState();
 }
 elAvatarBtn.addEventListener("click", function(){
   var idx = AVATAR_OPTIONS.indexOf(profile.avatar);
@@ -17,11 +18,12 @@ elProfileName.addEventListener("change", function(){
   profile.name = elProfileName.value.trim();
   saveProfile();
 });
+// Apple sign-in isn't implemented yet (see js/core/google-auth.js for why
+// Google works differently) — clicking it just shows the honest note.
 function showOauthNote(){
   elOauthNote.hidden = false;
   elProfileName.focus();
 }
-elGoogleBtn.addEventListener("click", showOauthNote);
 elAppleBtn.addEventListener("click", showOauthNote);
 
 function topCuisine(){

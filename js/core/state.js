@@ -23,6 +23,7 @@ var elSearchForm = $("rnSearchForm"), elSearchInput = $("rnSearchInput"), elSear
 var elCartList = $("rnCartList"), elCartEmpty = $("rnCartEmpty"), elSortCart = $("rnSortCart");
 var elAvatarBtn = $("rnAvatarBtn"), elProfileName = $("rnProfileName");
 var elGoogleBtn = $("rnGoogleBtn"), elAppleBtn = $("rnAppleBtn"), elOauthNote = $("rnOauthNote");
+var elOauthSignedIn = $("rnOauthSignedIn"), elGoogleAvatarImg = $("rnGoogleAvatarImg"), elGoogleName = $("rnGoogleName"), elGoogleEmail = $("rnGoogleEmail"), elGoogleSignOutBtn = $("rnGoogleSignOutBtn");
 var elLangBg = $("rnLangBg"), elLangEn = $("rnLangEn");
 var elThemeBtn = $("rnThemeBtn");
 var elForm = $("rnForm");

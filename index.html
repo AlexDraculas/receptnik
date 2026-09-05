@@ -12,6 +12,7 @@
 <meta name="apple-mobile-web-app-title" content="Рецептник">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8D%B3%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="css/style.css">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
 <div class="rn-page">
@@ -162,11 +163,19 @@
         <div class="rn-profile-hint" data-i18n="profileHint">Профилът е локален — запазва се само за теб на това устройство.</div>
       </div>
 
-      <div class="rn-oauth-row">
+      <div class="rn-oauth-row" id="rnOauthButtons">
         <button type="button" class="rn-3d c-white rn-oauth-btn" id="rnGoogleBtn"><span class="rn-oauth-g">G</span> <span data-i18n="signInGoogle">Вход с Google</span></button>
         <button type="button" class="rn-3d c-white rn-oauth-btn" id="rnAppleBtn"><span>🍎</span> <span data-i18n="signInApple">Вход с Apple</span></button>
       </div>
-      <div class="rn-oauth-note" id="rnOauthNote" hidden data-i18n="oauthNote">Този сайт е самостоятелен файл без сървър, затова истински вход с Google/Apple не е възможен тук. Профилът по-горе се пази локално вместо него.</div>
+      <div class="rn-oauth-signedin" id="rnOauthSignedIn" hidden>
+        <img id="rnGoogleAvatarImg" class="rn-oauth-avatar" alt="">
+        <div class="rn-oauth-signedin-text">
+          <div class="rn-oauth-name" id="rnGoogleName"></div>
+          <div class="rn-oauth-email" id="rnGoogleEmail"></div>
+        </div>
+        <button type="button" class="rn-3d c-white rn-oauth-signout-btn" id="rnGoogleSignOutBtn" data-i18n="signOutBtn">Изход</button>
+      </div>
+      <div class="rn-oauth-note" id="rnOauthNote" hidden data-i18n="oauthNote">Вход с Apple предстои — засега работи само Google. Профилът по-горе продължава да се пази локално, ако не влезеш.</div>
 
       <div class="rn-streak-hero">
         <div class="rn-streak-flame" id="rnStreakFlame">🔥</div>
@@ -291,6 +300,7 @@
   <script src="js/recipes/cart.js"></script>
   <script src="js/recipes/search.js"></script>
   <script src="js/recipes/add-recipe.js"></script>
+  <script src="js/core/google-auth.js"></script>
   <script src="js/profile/profile.js"></script>
   <script src="js/cooking/cooking.js"></script>
   <script src="js/app.js"></script>
