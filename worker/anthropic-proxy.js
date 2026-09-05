@@ -11,6 +11,12 @@
 //    the same data. Routes: POST /auth/register, /auth/login,
 //    /auth/request-reset, /auth/reset-password; GET and PUT /sync.
 //
+// Hardening pass (2026-09): rate limiting on every auth route, request-size
+// caps, and length caps on user input — see the "abuse limits" section below
+// for the reasoning. None of this claims to be unbreakable (nothing is) —
+// the goal is to make scripted brute-force/spam/DoS attempts expensive
+// enough to not be worth it, and to fail loudly (429) rather than silently.
+//
 // See DEPLOY.md in this folder for the exact setup steps (Cloudflare
 // dashboard only, no command line needed).
 
@@ -22,18 +28,24 @@ const ANTHROPIC_VERSION = "2023-06-01";
 // refuse a response that echoes "null" back. Every route here gates access
 // with its own token instead of relying on cookies/origin, so a wildcard is
 // safe and works whether the site is opened locally or hosted anywhere.
+// There's also no CSRF surface: nothing here uses cookies, so a third-party
+// page can't ride the browser's ambient credentials — an attacker's page
+// would have to already have the bearer token, at which point CORS is moot.
 function corsHeaders() {
   return {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, POST, PUT, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, X-App-Token, Authorization",
+    "X-Content-Type-Options": "nosniff",
   };
 }
 
 function json(data, status, cors) {
   return new Response(JSON.stringify(data), {
     status: status || 200,
-    headers: { "Content-Type": "application/json", ...cors },
+    // no-store: responses here can carry session tokens or account data —
+    // never let a browser/proxy cache keep a copy around.
+    headers: { "Content-Type": "application/json", "Cache-Control": "no-store", ...cors },
   });
 }
 
@@ -128,6 +140,75 @@ async function requireAuth(request, env) {
   return verifyToken(token, env.AUTH_SECRET);
 }
 
+// ---------- abuse limits: request size, input length, and rate limiting ----------
+//
+// Every one of these is "best-effort", not a formal guarantee — the honest
+// framing (see the file header) is that this raises the cost of automated
+// abuse enormously without claiming to be unbreakable:
+//
+// - Body size caps stop someone from POSTing a multi-MB junk body just to
+//   waste CPU/KV-write bandwidth.
+// - Length caps on email/password/code specifically stop someone from
+//   sending a huge password string, which would make hashPassword() (real
+//   CPU work, 100000 PBKDF2 rounds) far more expensive per request than
+//   intended — a cheap way to burn a disproportionate amount of the
+//   Worker's CPU budget per request otherwise.
+// - Rate limiting is a fixed-window counter stored in the same KV namespace
+//   as everything else, keyed by client IP (Cloudflare's own
+//   CF-Connecting-IP header — set by Cloudflare's edge, not something a
+//   client can forge) and, for login/reset, also by the target email so a
+//   distributed attacker can't work around a per-IP cap by spreading
+//   requests across many IPs at one victim account. It is NOT perfectly
+//   atomic (KV reads-then-writes aren't transactional, so a very tight
+//   concurrent burst could slip a few requests past the cap) — a fully
+//   atomic limiter would need Durable Objects, which is more moving parts
+//   than a personal-scale app like this needs. As a fixed window it also
+//   allows a short burst right at the window boundary (a known, accepted
+//   trade-off of fixed-window over sliding-window limiters). None of that
+//   matters for stopping the realistic threat here — scripted brute-force
+//   or spam tools that fire far more than a handful of requests a minute.
+
+const MAX_AUTH_BODY = 8 * 1024; // 8 KB — generous for email+password+code JSON, tiny for anything else
+const MAX_EMAIL_LEN = 254; // RFC 5321 practical limit
+const MAX_PASSWORD_LEN = 128; // generous for any real password; blocks CPU-burning giant strings into PBKDF2
+const MAX_CODE_LEN = 32; // real codes are 6 digits; this just blocks garbage before hashing it
+
+async function readJsonBody(request, maxBytes) {
+  const text = await request.text();
+  if (text.length > maxBytes) return null;
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    return null;
+  }
+}
+
+function clientIp(request) {
+  return request.headers.get("CF-Connecting-IP") || "unknown";
+}
+
+const RATE_LIMITS = {
+  register: { max: 8, windowSec: 600 }, // 8 registrations / 10 min / IP
+  "login-ip": { max: 15, windowSec: 600 }, // 15 login attempts / 10 min / IP
+  "login-email": { max: 8, windowSec: 600 }, // 8 login attempts / 10 min / target account
+  "reset-request-ip": { max: 10, windowSec: 900 }, // 10 reset requests / 15 min / IP
+  "reset-request-email": { max: 5, windowSec: 900 }, // 5 reset emails / 15 min / target account
+  "reset-password-ip": { max: 20, windowSec: 900 }, // 20 code attempts / 15 min / IP — makes brute-forcing a
+  // 6-digit code (1,000,000 possibilities) inside its own 15-min TTL statistically pointless
+  "sync-put": { max: 60, windowSec: 60 }, // 60 syncs / min / account — way above normal debounced usage (~1/sec bursts)
+};
+
+async function checkRateLimit(env, bucket, key) {
+  const limit = RATE_LIMITS[bucket];
+  if (!limit) return true;
+  const kvKey = "rl:" + bucket + ":" + key;
+  const raw = await env.RECEPTNIK_DATA.get(kvKey);
+  const count = raw ? parseInt(raw, 10) || 0 : 0;
+  if (count >= limit.max) return false;
+  await env.RECEPTNIK_DATA.put(kvKey, String(count + 1), { expirationTtl: limit.windowSec });
+  return true;
+}
+
 // ---------- password-reset email, via Resend (https://resend.com — free, no domain needed as long as the app's account email is the same address you signed up to Resend with) ----------
 async function sendResetEmail(env, toEmail, code) {
   const resp = await fetch("https://api.resend.com/emails", {
@@ -152,12 +233,15 @@ async function sendResetEmail(env, toEmail, code) {
 // ---------- routes ----------
 
 async function handleRegister(request, env, cors) {
-  let body;
-  try { body = await request.json(); } catch (e) { return json({ error: "invalid-json" }, 400, cors); }
+  const ip = clientIp(request);
+  if (!(await checkRateLimit(env, "register", ip))) return json({ error: "rate-limited" }, 429, cors);
+
+  const body = await readJsonBody(request, MAX_AUTH_BODY);
+  if (!body) return json({ error: "invalid-json" }, 400, cors);
   const email = normalizeEmail(body.email);
   const password = String(body.password || "");
-  if (!isValidEmail(email)) return json({ error: "invalid-email" }, 400, cors);
-  if (password.length < 8) return json({ error: "weak-password" }, 400, cors);
+  if (!isValidEmail(email) || email.length > MAX_EMAIL_LEN) return json({ error: "invalid-email" }, 400, cors);
+  if (password.length < 8 || password.length > MAX_PASSWORD_LEN) return json({ error: "weak-password" }, 400, cors);
 
   const existing = await env.RECEPTNIK_DATA.get("user:" + email);
   if (existing) return json({ error: "email-taken" }, 409, cors);
@@ -172,10 +256,16 @@ async function handleRegister(request, env, cors) {
 }
 
 async function handleLogin(request, env, cors) {
-  let body;
-  try { body = await request.json(); } catch (e) { return json({ error: "invalid-json" }, 400, cors); }
+  const ip = clientIp(request);
+  if (!(await checkRateLimit(env, "login-ip", ip))) return json({ error: "rate-limited" }, 429, cors);
+
+  const body = await readJsonBody(request, MAX_AUTH_BODY);
+  if (!body) return json({ error: "invalid-json" }, 400, cors);
   const email = normalizeEmail(body.email);
   const password = String(body.password || "");
+  if (email.length > MAX_EMAIL_LEN || password.length > MAX_PASSWORD_LEN) return json({ error: "invalid-credentials" }, 400, cors);
+
+  if (!(await checkRateLimit(env, "login-email", email))) return json({ error: "rate-limited" }, 429, cors);
 
   const raw = await env.RECEPTNIK_DATA.get("user:" + email);
   if (!raw) return json({ error: "invalid-credentials" }, 401, cors);
@@ -188,33 +278,47 @@ async function handleLogin(request, env, cors) {
 }
 
 async function handleRequestReset(request, env, cors) {
-  let body;
-  try { body = await request.json(); } catch (e) { return json({ error: "invalid-json" }, 400, cors); }
+  const ip = clientIp(request);
+  if (!(await checkRateLimit(env, "reset-request-ip", ip))) return json({ error: "rate-limited" }, 429, cors);
+
+  const body = await readJsonBody(request, MAX_AUTH_BODY);
+  if (!body) return json({ error: "invalid-json" }, 400, cors);
   const email = normalizeEmail(body.email);
 
-  const raw = await env.RECEPTNIK_DATA.get("user:" + email);
-  if (raw) {
-    const code = String(Math.floor(100000 + Math.random() * 900000)); // 6 digits
-    const codeHash = await sha256Hex(code);
-    await env.RECEPTNIK_DATA.put("reset:" + email, JSON.stringify({ codeHash }), { expirationTtl: 900 }); // 15 min
-    try {
-      await sendResetEmail(env, email, code);
-    } catch (e) {
-      return json({ error: "email-send-failed", detail: e.message }, 502, cors);
+  // Per-email limit fails "silently" (still ok:true) rather than 429 — so the
+  // response never differs based on whether the email exists or has been
+  // reset-spammed, preserving the no-enumeration property below.
+  const emailOk = email.length <= MAX_EMAIL_LEN && (await checkRateLimit(env, "reset-request-email", email));
+
+  if (emailOk) {
+    const raw = await env.RECEPTNIK_DATA.get("user:" + email);
+    if (raw) {
+      const code = String(Math.floor(100000 + Math.random() * 900000)); // 6 digits
+      const codeHash = await sha256Hex(code);
+      await env.RECEPTNIK_DATA.put("reset:" + email, JSON.stringify({ codeHash }), { expirationTtl: 900 }); // 15 min
+      try {
+        await sendResetEmail(env, email, code);
+      } catch (e) {
+        return json({ error: "email-send-failed", detail: e.message }, 502, cors);
+      }
     }
   }
-  // Same response whether or not the account exists, so the endpoint can't be used to
-  // check which emails are registered.
+  // Same response whether or not the account exists (or was rate-limited), so
+  // the endpoint can't be used to check which emails are registered.
   return json({ ok: true }, 200, cors);
 }
 
 async function handleResetPassword(request, env, cors) {
-  let body;
-  try { body = await request.json(); } catch (e) { return json({ error: "invalid-json" }, 400, cors); }
+  const ip = clientIp(request);
+  if (!(await checkRateLimit(env, "reset-password-ip", ip))) return json({ error: "rate-limited" }, 429, cors);
+
+  const body = await readJsonBody(request, MAX_AUTH_BODY);
+  if (!body) return json({ error: "invalid-json" }, 400, cors);
   const email = normalizeEmail(body.email);
   const code = String(body.code || "").trim();
   const newPassword = String(body.newPassword || "");
-  if (newPassword.length < 8) return json({ error: "weak-password" }, 400, cors);
+  if (code.length > MAX_CODE_LEN) return json({ error: "invalid-or-expired-code" }, 400, cors);
+  if (newPassword.length < 8 || newPassword.length > MAX_PASSWORD_LEN) return json({ error: "weak-password" }, 400, cors);
 
   const rawReset = await env.RECEPTNIK_DATA.get("reset:" + email);
   if (!rawReset) return json({ error: "invalid-or-expired-code" }, 400, cors);
@@ -247,6 +351,7 @@ const MAX_SYNC_BODY = 3 * 1024 * 1024; // 3 MB — generous for recipes/stats/pr
 async function handlePutSync(request, env, cors) {
   const email = await requireAuth(request, env);
   if (!email) return json({ error: "unauthorized" }, 401, cors);
+  if (!(await checkRateLimit(env, "sync-put", email))) return json({ error: "rate-limited" }, 429, cors);
   const text = await request.text();
   if (text.length > MAX_SYNC_BODY) return json({ error: "payload-too-large" }, 413, cors);
   let body;

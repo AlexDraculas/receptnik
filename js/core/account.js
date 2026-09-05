@@ -37,6 +37,7 @@ function accountError(code){
     "email-taken": "accountErrEmailTaken",
     "invalid-credentials": "accountErrInvalidCredentials",
     "invalid-or-expired-code": "accountErrInvalidCode",
+    "rate-limited": "accountErrRateLimited",
   };
   var e = new Error(t(map[code] || "accountErrGeneric"));
   e.isAccountError = true;

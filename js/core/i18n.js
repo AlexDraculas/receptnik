@@ -78,6 +78,7 @@ var I18N = {
     accountErrInvalidEmail:"Невалиден имейл адрес.", accountErrWeakPassword:"Паролата трябва да е поне 8 символа.",
     accountErrPasswordMismatch:"Паролите не съвпадат.", accountErrEmailTaken:"Вече има акаунт с този имейл — влез вместо да се регистрираш.",
     accountErrInvalidCredentials:"Грешен имейл или парола.", accountErrInvalidCode:"Грешен или изтекъл код.",
+    accountErrRateLimited:"Твърде много опити. Изчакай малко и опитай пак.",
     accountErrGeneric:"Нещо се обърка. Опитай пак.", accountLogoutConfirm:"Излязъл си от акаунта. Рецептите остават запазени на това устройство."
   },
   en:{
@@ -152,6 +153,7 @@ var I18N = {
     accountErrInvalidEmail:"Invalid email address.", accountErrWeakPassword:"Password must be at least 8 characters.",
     accountErrPasswordMismatch:"Passwords don't match.", accountErrEmailTaken:"That email already has an account — log in instead.",
     accountErrInvalidCredentials:"Wrong email or password.", accountErrInvalidCode:"Wrong or expired code.",
+    accountErrRateLimited:"Too many attempts. Please wait a bit and try again.",
     accountErrGeneric:"Something went wrong. Please try again.", accountLogoutConfirm:"Signed out. Your recipes are still saved on this device."
   }
 };
