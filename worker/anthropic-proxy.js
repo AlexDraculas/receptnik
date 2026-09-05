@@ -56,7 +56,11 @@ async function sha256Hex(text) {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
   return bufToHex(digest);
 }
-const PBKDF2_ITERATIONS = 150000;
+// Cloudflare Workers' PBKDF2 implementation caps out at 100000 iterations
+// (a higher count throws "iteration counts above 100000 are not supported" at
+// runtime) — this is the practical max on this platform, not a deliberate
+// weakening; it's still a solid, standard PBKDF2-SHA256 work factor.
+const PBKDF2_ITERATIONS = 100000;
 async function hashPassword(password, saltHex) {
   const keyMaterial = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), { name: "PBKDF2" }, false, ["deriveBits"]);
   const bits = await crypto.subtle.deriveBits(
