@@ -83,11 +83,11 @@ function fetchCostEstimate(ingredients){
     "Also pick up to 3 ingredients from the list that are the most likely to be out of stock or hard to find in one of these chains, and suggest a reasonable substitute for each, in " + contentLang + ".\n" +
     "Return ONLY this JSON, nothing else: {\"totalEur\":11.40,\"substitutes\":[{\"original\":\"...\",\"alternative\":\"...\"}]}";
 
-  return fetch("https://api.anthropic.com/v1/messages", {
+  return fetch(AI_PROXY_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "X-App-Token": AI_APP_TOKEN },
     body: JSON.stringify({
-      model: "claude-sonnet-4-6",
+      model: "claude-sonnet-5",
       max_tokens: 1000,
       messages: [{ role: "user", content: prompt }],
       tools: [{ type: "web_search_20250305", name: "web_search" }]

@@ -15,6 +15,35 @@ function starsHtml(rating){
   return '<span class="rn-stars" style="--pct:'+pct+'%">★★★★★</span>';
 }
 
+// Turns a numeric site rating (out of 5) into a short human sentence, so
+// results are readable at a glance and not just a bare number.
+function satisfactionLabel(rating){
+  if(typeof rating !== "number") return "";
+  if(LANG === "en"){
+    if(rating >= 4.5) return "Users love it";
+    if(rating >= 4.0) return "Users are very happy with it";
+    if(rating >= 3.5) return "Users are happy with it";
+    if(rating >= 3.0) return "Mixed reviews";
+    return "Not well reviewed";
+  }
+  if(rating >= 4.5) return "Потребителите го обожават";
+  if(rating >= 4.0) return "Потребителите са много доволни";
+  if(rating >= 3.5) return "Потребителите са доволни";
+  if(rating >= 3.0) return "Смесени отзиви";
+  return "Слабо оценена";
+}
+
+// Results come back already sorted by the model, but we sort again on our
+// side so the order is guaranteed regardless of what the model actually did.
+// Unrated results (no "rating" field) sort last.
+function sortByRatingDesc(results){
+  return results.slice().sort(function(a, b){
+    var ra = (typeof a.rating === "number") ? a.rating : -1;
+    var rb = (typeof b.rating === "number") ? b.rating : -1;
+    return rb - ra;
+  });
+}
+
 function renderSearchResults(results){
   elSearchResults.innerHTML = "";
   elSearchEmpty.hidden = results.length !== 0;
@@ -28,14 +57,20 @@ function renderSearchResults(results){
     body.style.flexWrap = "wrap";
     body.style.flex = "1";
     body.style.minWidth = "0";
+    var label = satisfactionLabel(res.rating);
     var ratingHtml = (typeof res.rating === "number")
-      ? starsHtml(res.rating) + ' <span style="font-size:12px; font-weight:800; color:var(--muted);">'+res.rating.toFixed(1)+'</span>'
+      ? starsHtml(res.rating) + ' <span style="font-size:12px; font-weight:800; color:var(--muted);">'+res.rating.toFixed(1)+'</span>' +
+        (label ? ' <span style="font-size:12px; font-weight:700; color:var(--muted);">— '+escapeHtml(label)+'</span>' : "")
+      : "";
+    var descHtml = res.description
+      ? '<div style="margin-top:4px; font-size:12px; color:var(--muted); font-weight:600;">'+escapeHtml(res.description)+'</div>'
       : "";
     body.innerHTML =
       '<div class="rn-medallion" style="background:'+CARD_COLORS[i % CARD_COLORS.length]+'">🌐</div>' +
       '<div style="flex:1; min-width:0;">' +
         '<p class="rn-card-title" style="white-space:normal;">'+escapeHtml(res.title||"")+'</p>' +
         '<div class="rn-card-meta">'+escapeHtml(res.site||"")+'</div>' +
+        descHtml +
         '<div style="margin-top:6px;">'+ratingHtml+'</div>' +
       '</div>';
     var addBtn = document.createElement("button");
@@ -78,13 +113,14 @@ function extractSearchResults(data){
       if(Array.isArray(parsed.results)) return parsed.results;
     }
   } catch(e){ /* fall through to the scraper below — the JSON may be truncated */ }
-  // Fallback: pull out individual {site,title,url,rating} objects even from
-  // truncated/slightly malformed JSON, so a cut-off response still shows results.
+  // Fallback: pull out individual {site,title,url,description,rating} objects
+  // even from truncated/slightly malformed JSON, so a cut-off response still
+  // shows results.
   var results = [];
-  var re = /\{\s*"site"\s*:\s*"([^"]*)"\s*,\s*"title"\s*:\s*"([^"]*)"\s*,\s*"url"\s*:\s*"([^"]*)"(?:\s*,\s*"rating"\s*:\s*([\d.]+))?/g;
+  var re = /\{\s*"site"\s*:\s*"([^"]*)"\s*,\s*"title"\s*:\s*"([^"]*)"\s*,\s*"url"\s*:\s*"([^"]*)"\s*,\s*"description"\s*:\s*"([^"]*)"(?:\s*,\s*"rating"\s*:\s*([\d.]+))?/g;
   var m;
   while((m = re.exec(raw)) !== null){
-    results.push({ site:m[1], title:m[2], url:m[3], rating: m[4] ? parseFloat(m[4]) : undefined });
+    results.push({ site:m[1], title:m[2], url:m[3], description:m[4], rating: m[5] ? parseFloat(m[5]) : undefined });
   }
   return results;
 }
@@ -94,16 +130,17 @@ function performDishSearch(query){
   elSearchResults.innerHTML = "";
   elSearchEmpty.hidden = true;
 
+  var contentLang = LANG === "en" ? "English" : "Bulgarian";
   var prompt = "Search well-known recipe/cooking sites (AllRecipes, BBC Good Food, Food Network, Serious Eats, Epicurious, NYT Cooking, Tasty, Bon Appétit, etc.) for the dish: \"" + query + "\".\n" +
-    "Find up to 4 real recipe pages for it, from different sites where possible. For each: site name, exact recipe title, its real URL, and its rating out of 5 as shown on the page (a number, e.g. 4.6) — omit \"rating\" entirely if you didn't actually see one, never guess it.\n" +
+    "Find up to 4 real recipe pages for it, from different sites where possible. For each: site name, exact recipe title, its real URL, a short description (under 15 words, in " + contentLang + ", of what the dish/recipe actually is — not a review), and its rating out of 5 as shown on the page (a number, e.g. 4.6) — omit \"rating\" entirely if you didn't actually see one, never guess it.\n" +
     "Sort by rating, highest first (unrated ones last). Keep title and site short.\n" +
-    "Respond with ONLY this JSON, nothing else, no markdown fences, no explanation: {\"results\":[{\"site\":\"...\",\"title\":\"...\",\"url\":\"...\",\"rating\":4.6}]}";
+    "Respond with ONLY this JSON, nothing else, no markdown fences, no explanation: {\"results\":[{\"site\":\"...\",\"title\":\"...\",\"url\":\"...\",\"description\":\"...\",\"rating\":4.6}]}";
 
-  fetch("https://api.anthropic.com/v1/messages", {
+  fetch(AI_PROXY_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "X-App-Token": AI_APP_TOKEN },
     body: JSON.stringify({
-      model: "claude-sonnet-4-6",
+      model: "claude-sonnet-5",
       max_tokens: 1000,
       messages: [{ role: "user", content: prompt }],
       tools: [{ type: "web_search_20250305", name: "web_search" }]
@@ -115,6 +152,7 @@ function performDishSearch(query){
     .then(function(data){
       var results = extractSearchResults(data);
       results = results.filter(function(r){ return r && r.url && r.title; });
+      results = sortByRatingDesc(results);
       lastSearchResults = results;
       if(results.length === 0){
         setSearchStatus("", "");
@@ -190,11 +228,11 @@ function importRecipeFromUrl(url, hintTitle){
     "IMPORTANT — every field must be filled in, never leave anything blank or null except timerMinutes/timerType: pick the closest matching \"cuisine\" and \"style\" even if you have to guess, write a real \"description\" and a realistic \"time\" estimate, and include actual quantities in each ingredient. Never write placeholders like 'unknown' or 'N/A' — always give your best concrete answer instead.\n" +
     "Write name/description/ingredients/steps in " + contentLang + ". The \"cuisine\" and \"style\" values themselves must stay exactly one of the listed options (fixed category names, do not translate them). No more than 12 ingredients and 8 steps. Set timerMinutes and timerType ONLY on steps that involve baking, frying, freezing, resting/setting, or proofing dough — timerType must then be exactly one of \"bake\", \"fry\", \"freeze\", \"rest\", \"proof\". On every other step both must be null.";
 
-  return fetch("https://api.anthropic.com/v1/messages", {
+  return fetch(AI_PROXY_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "X-App-Token": AI_APP_TOKEN },
     body: JSON.stringify({
-      model: "claude-sonnet-4-6",
+      model: "claude-sonnet-5",
       max_tokens: 1000,
       messages: [{ role: "user", content: prompt }],
       tools: [{ type: "web_search_20250305", name: "web_search" }]
