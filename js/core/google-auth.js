@@ -17,7 +17,7 @@
 // Setup (one-time): create a free OAuth Client ID in Google Cloud Console
 // with "https://alexdraculas.github.io" as an Authorized JavaScript origin,
 // then paste it below. See the setup guide for the exact steps.
-var GOOGLE_CLIENT_ID = "PASTE_YOUR_GOOGLE_CLIENT_ID_HERE.apps.googleusercontent.com";
+var GOOGLE_CLIENT_ID = "366327042369-cteuf1qfou2h0ftvciu74d374f4hmuvu.apps.googleusercontent.com";
 
 var googleTokenClient = null;
 var googleInitRetries = 0;
