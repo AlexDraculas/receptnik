@@ -196,6 +196,7 @@ const RATE_LIMITS = {
   "reset-password-ip": { max: 20, windowSec: 900 }, // 20 code attempts / 15 min / IP — makes brute-forcing a
   // 6-digit code (1,000,000 possibilities) inside its own 15-min TTL statistically pointless
   "sync-put": { max: 60, windowSec: 60 }, // 60 syncs / min / account — way above normal debounced usage (~1/sec bursts)
+  "ai-proxy": { max: 40, windowSec: 600 }, // 40 AI calls / 10 min / IP — generous for real interactive use (search/import/cart-cost), tight for a scripted cost-abuse loop
 };
 
 async function checkRateLimit(env, bucket, key) {
@@ -366,7 +367,36 @@ async function handlePutSync(request, env, cors) {
   return json({ ok: true, updatedAt: data.updatedAt }, 200, cors);
 }
 
-// ---------- the original AI proxy (unchanged behavior) ----------
+// ---------- the AI proxy ----------
+//
+// X-App-Token is NOT a real secret — it lives in plain sight in the client
+// JS bundle (js/core/api.js), which is served from a public repo. It only
+// ever stopped drive-by scanners hitting the bare URL, never a person who
+// actually reads the app's own source. Without anything past that check,
+// anyone who copies the token can call api.anthropic.com through this Worker
+// with Aleks's real ANTHROPIC_API_KEY, with no cap on cost, model, or volume
+// — this is the same class of risk as the AUTH_SECRET leak, just against
+// the API bill instead of accounts. The checks below don't try to replace a
+// real per-user auth system (this proxy is intentionally anonymous, same as
+// before); they cap it to the shape the app itself actually sends, so a
+// scraped token is only as useful as the app's own three real AI features.
+const MAX_AI_BODY = 20 * 1024; // generous for a search/cart-cost prompt with a full ingredient list
+const MAX_AI_TOKENS = 1500; // every real call site asks for 1000
+const ALLOWED_AI_MODELS = ["claude-sonnet-5"]; // the only model the app ever requests
+const ALLOWED_AI_TOOL_TYPES = ["web_search_20250305"]; // the only tool the app ever requests
+
+function validateAiRequest(parsed) {
+  if (!parsed || typeof parsed !== "object") return "invalid-request";
+  if (ALLOWED_AI_MODELS.indexOf(parsed.model) === -1) return "invalid-request";
+  if (typeof parsed.max_tokens !== "number" || parsed.max_tokens <= 0 || parsed.max_tokens > MAX_AI_TOKENS) return "invalid-request";
+  if (!Array.isArray(parsed.messages) || parsed.messages.length === 0 || parsed.messages.length > 10) return "invalid-request";
+  if (parsed.tools !== undefined) {
+    if (!Array.isArray(parsed.tools) || parsed.tools.length > 1) return "invalid-request";
+    if (parsed.tools.some((tool) => ALLOWED_AI_TOOL_TYPES.indexOf(tool && tool.type) === -1)) return "invalid-request";
+  }
+  return null;
+}
+
 async function handleAiProxy(request, env, cors) {
   if (env.APP_TOKEN && request.headers.get("X-App-Token") !== env.APP_TOKEN) {
     return new Response("Forbidden", { status: 403, headers: cors });
@@ -374,13 +404,18 @@ async function handleAiProxy(request, env, cors) {
   if (!env.ANTHROPIC_API_KEY) {
     return new Response("Server misconfigured: ANTHROPIC_API_KEY secret not set", { status: 500, headers: cors });
   }
-  let body;
-  try {
-    body = await request.text();
-    JSON.parse(body);
-  } catch (e) {
+  const ip = clientIp(request);
+  if (!(await checkRateLimit(env, "ai-proxy", ip))) return json({ error: "rate-limited" }, 429, cors);
+
+  const body = await readJsonBody(request, MAX_AI_BODY);
+  if (body === null) {
     return new Response("Invalid JSON body", { status: 400, headers: cors });
   }
+  const validationError = validateAiRequest(body);
+  if (validationError) {
+    return json({ error: validationError }, 400, cors);
+  }
+  const bodyText = JSON.stringify(body);
   let upstream;
   try {
     upstream = await fetch("https://api.anthropic.com/v1/messages", {
@@ -390,7 +425,7 @@ async function handleAiProxy(request, env, cors) {
         "x-api-key": env.ANTHROPIC_API_KEY,
         "anthropic-version": ANTHROPIC_VERSION,
       },
-      body: body,
+      body: bodyText,
     });
   } catch (e) {
     return new Response("Upstream request failed: " + e.message, { status: 502, headers: cors });
