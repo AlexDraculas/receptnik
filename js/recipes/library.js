@@ -205,15 +205,24 @@ function renderLibrary(){
   elFavToggleIcon.textContent = filters.favoritesOnly ? "❤️" : "🤍";
   elFavToggleLabel.textContent = t("favToggleLabel") + (favCount > 0 ? " · " + favCount : "");
 
+  var query = (filters.query || "").trim().toLowerCase();
   var filtered = recipes.filter(function(r){
     if(filters.favoritesOnly && !r.favorite) return false;
     if(filters.cuisine !== "all" && r.cuisine !== filters.cuisine) return false;
     if(filters.style !== "all" && r.style !== filters.style) return false;
+    if(query){
+      var haystack = (r.name + " " + (r.description||"")).toLowerCase();
+      if(haystack.indexOf(query) === -1) return false;
+    }
     return true;
   });
   elCount.textContent = recipes.length ? countLabel(recipes.length) : "";
 
-  if(filtered.length === 0 && filters.favoritesOnly){
+  if(filtered.length === 0 && query){
+    elEmpty.querySelector(".rn-empty-emoji").textContent = "🔍";
+    elEmptyTitle.textContent = t("librarySearchEmptyTitle");
+    elEmptyBody.textContent = t("librarySearchEmptyBody");
+  } else if(filtered.length === 0 && filters.favoritesOnly){
     elEmpty.querySelector(".rn-empty-emoji").textContent = "💜";
     elEmptyTitle.textContent = t("favEmptyTitle");
     elEmptyBody.textContent = t("favEmptyBody");
@@ -228,6 +237,12 @@ elFavToggle.addEventListener("click", function(){
   filters.favoritesOnly = !filters.favoritesOnly;
   renderLibrary();
 });
+if(elLibrarySearch){
+  elLibrarySearch.addEventListener("input", function(){
+    filters.query = elLibrarySearch.value;
+    renderLibrary();
+  });
+}
 if(elHeroSeeAll){
   elHeroSeeAll.addEventListener("click", function(){
     elFavToggle.scrollIntoView({ behavior:"smooth", block:"start" });

@@ -5,7 +5,7 @@
 var recipes = [];
 var stats = { streak:0, lastCookAt:null, streakCreditDate:null, totalCooked:0 };
 var profile = { name:"", avatar:"🧑‍🍳" };
-var filters = { cuisine:"all", style:"all", favoritesOnly:false };
+var filters = { cuisine:"all", style:"all", favoritesOnly:false, query:"" };
 var openCardId = null;
 var activeRecipe = null;
 var stepIndex = 0;
@@ -16,6 +16,7 @@ var notifAsked = false;
 var $ = function(id){ return document.getElementById(id); };
 var elList = $("rnList"), elEmpty = $("rnEmpty"), elCount = $("rnCount"), elLoading = $("rnLoading");
 var elHomeGreeting = $("rnHomeGreeting"), elHeroSection = $("rnHeroSection"), elHeroRow = $("rnHeroRow"), elHeroSeeAll = $("rnHeroSeeAll"), elProgressRow = $("rnProgressRow");
+var elLibrarySearch = $("rnLibrarySearch");
 var elEmptyTitle = $("rnEmptyTitle"), elEmptyBody = $("rnEmptyBody");
 var elFavToggle = $("rnFavToggle"), elFavToggleIcon = $("rnFavToggleIcon"), elFavToggleLabel = $("rnFavToggleLabel");
 var elChipsCuisine = $("rnChipsCuisine"), elChipsStyle = $("rnChipsStyle"), elSortLibrary = $("rnSortLibrary");
