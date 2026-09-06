@@ -196,6 +196,9 @@ const RATE_LIMITS = {
   "reset-password-ip": { max: 20, windowSec: 900 }, // 20 code attempts / 15 min / IP — makes brute-forcing a
   // 6-digit code (1,000,000 possibilities) inside its own 15-min TTL statistically pointless
   "sync-put": { max: 60, windowSec: 60 }, // 60 syncs / min / account — way above normal debounced usage (~1/sec bursts)
+  "ai-proxy": { max: 40, windowSec: 600 }, // 40 AI calls / 10 min / IP — generous for real interactive use (search/import/cart-cost), tight for a scripted cost-abuse loop
+  "share-create": { max: 20, windowSec: 600 }, // 20 new shares / 10 min / IP — plenty for a real person sharing recipes, blocks a KV-filling spam loop
+  "share-read": { max: 120, windowSec: 600 }, // 120 shared-recipe views / 10 min / IP — generous for someone opening several shared links, tight against scraping every id
 };
 
 async function checkRateLimit(env, bucket, key) {
@@ -366,7 +369,114 @@ async function handlePutSync(request, env, cors) {
   return json({ ok: true, updatedAt: data.updatedAt }, 200, cors);
 }
 
-// ---------- the original AI proxy (unchanged behavior) ----------
+// ---------- recipe sharing ----------
+//
+// Public and unauthenticated by design — a share link is meant to be opened
+// by anyone it's sent to, same as sharing any other link — but capped and
+// rate limited on both ends so it can't be used to dump arbitrary data into
+// KV (create side) or scraped/enumerated at scale (read side). Shares expire
+// after 90 days rather than living in KV forever.
+const MAX_SHARE_BODY = 20 * 1024; // a recipe with a full ingredient/step list is a few KB at most
+const SHARE_TTL_SEC = 90 * 24 * 60 * 60; // 90 days
+const MAX_SHARE_ARRAY = 100; // max ingredients / steps
+const MAX_SHARE_STR = 300; // per ingredient / short field
+const MAX_SHARE_STEP_STR = 2000; // a single step's instructions
+
+function validateShareRecipe(parsed) {
+  if (!parsed || typeof parsed !== "object") return "invalid-request";
+  if (typeof parsed.name !== "string" || !parsed.name.trim() || parsed.name.length > MAX_SHARE_STR) return "invalid-request";
+  if (parsed.description !== undefined && (typeof parsed.description !== "string" || parsed.description.length > 1000)) return "invalid-request";
+  if (parsed.cuisine !== undefined && (typeof parsed.cuisine !== "string" || parsed.cuisine.length > MAX_SHARE_STR)) return "invalid-request";
+  if (parsed.style !== undefined && (typeof parsed.style !== "string" || parsed.style.length > MAX_SHARE_STR)) return "invalid-request";
+  if (parsed.difficulty !== undefined && (typeof parsed.difficulty !== "string" || parsed.difficulty.length > MAX_SHARE_STR)) return "invalid-request";
+  if (parsed.time !== undefined && (typeof parsed.time !== "string" || parsed.time.length > MAX_SHARE_STR)) return "invalid-request";
+  if (!Array.isArray(parsed.ingredients) || parsed.ingredients.length === 0 || parsed.ingredients.length > MAX_SHARE_ARRAY) return "invalid-request";
+  if (parsed.ingredients.some((i) => typeof i !== "string" || i.length > MAX_SHARE_STR)) return "invalid-request";
+  if (!Array.isArray(parsed.steps) || parsed.steps.length === 0 || parsed.steps.length > MAX_SHARE_ARRAY) return "invalid-request";
+  if (parsed.steps.some((s) => !s || typeof s.text !== "string" || s.text.length > MAX_SHARE_STEP_STR || !isValidShareTimer(s.timer))) return "invalid-request";
+  return null;
+}
+
+// A step's timer is either null/absent, or the real shape the app itself
+// stores: { seconds, type, label, message } — see js/recipes/add-recipe.js.
+function isValidShareTimer(timer) {
+  if (timer == null) return true;
+  if (typeof timer !== "object") return false;
+  if (typeof timer.seconds !== "number" || timer.seconds <= 0 || timer.seconds > 24 * 3600) return false;
+  if (timer.type !== undefined && (typeof timer.type !== "string" || timer.type.length > 40)) return false;
+  if (timer.label !== undefined && (typeof timer.label !== "string" || timer.label.length > 200)) return false;
+  if (timer.message !== undefined && (typeof timer.message !== "string" || timer.message.length > 500)) return false;
+  return true;
+}
+
+async function handleCreateShare(request, env, cors) {
+  const ip = clientIp(request);
+  if (!(await checkRateLimit(env, "share-create", ip))) return json({ error: "rate-limited" }, 429, cors);
+
+  const body = await readJsonBody(request, MAX_SHARE_BODY);
+  if (body === null) return json({ error: "invalid-json" }, 400, cors);
+  const validationError = validateShareRecipe(body);
+  if (validationError) return json({ error: validationError }, 400, cors);
+
+  const shared = {
+    name: body.name.trim(),
+    description: body.description || "",
+    cuisine: body.cuisine || "",
+    style: body.style || "",
+    difficulty: body.difficulty || "",
+    time: body.time || "",
+    ingredients: body.ingredients,
+    steps: body.steps.map((s) => ({
+      text: s.text,
+      timer: s.timer == null ? null : { seconds: s.timer.seconds, type: s.timer.type || null, label: s.timer.label || "", message: s.timer.message || "" },
+    })),
+    sharedAt: Date.now(),
+  };
+  const id = randomHex(9); // 18 hex chars, 72 bits — not brute-forceable inside the rate limit above
+  await env.RECEPTNIK_DATA.put("share:" + id, JSON.stringify(shared), { expirationTtl: SHARE_TTL_SEC });
+  return json({ id }, 200, cors);
+}
+
+async function handleGetShare(request, env, cors, id) {
+  const ip = clientIp(request);
+  if (!(await checkRateLimit(env, "share-read", ip))) return json({ error: "rate-limited" }, 429, cors);
+  if (!id || id.length > 64 || !/^[a-f0-9]+$/.test(id)) return json({ error: "not-found" }, 404, cors);
+
+  const raw = await env.RECEPTNIK_DATA.get("share:" + id);
+  if (!raw) return json({ error: "not-found" }, 404, cors);
+  return new Response(raw, { status: 200, headers: { "Content-Type": "application/json", ...cors } });
+}
+
+// ---------- the AI proxy ----------
+//
+// X-App-Token is NOT a real secret — it lives in plain sight in the client
+// JS bundle (js/core/api.js), which is served from a public repo. It only
+// ever stopped drive-by scanners hitting the bare URL, never a person who
+// actually reads the app's own source. Without anything past that check,
+// anyone who copies the token can call api.anthropic.com through this Worker
+// with Aleks's real ANTHROPIC_API_KEY, with no cap on cost, model, or volume
+// — this is the same class of risk as the AUTH_SECRET leak, just against
+// the API bill instead of accounts. The checks below don't try to replace a
+// real per-user auth system (this proxy is intentionally anonymous, same as
+// before); they cap it to the shape the app itself actually sends, so a
+// scraped token is only as useful as the app's own three real AI features.
+const MAX_AI_BODY = 20 * 1024; // generous for a search/cart-cost prompt with a full ingredient list
+const MAX_AI_TOKENS = 1500; // every real call site asks for 1000
+const ALLOWED_AI_MODELS = ["claude-sonnet-5"]; // the only model the app ever requests
+const ALLOWED_AI_TOOL_TYPES = ["web_search_20250305"]; // the only tool the app ever requests
+
+function validateAiRequest(parsed) {
+  if (!parsed || typeof parsed !== "object") return "invalid-request";
+  if (ALLOWED_AI_MODELS.indexOf(parsed.model) === -1) return "invalid-request";
+  if (typeof parsed.max_tokens !== "number" || parsed.max_tokens <= 0 || parsed.max_tokens > MAX_AI_TOKENS) return "invalid-request";
+  if (!Array.isArray(parsed.messages) || parsed.messages.length === 0 || parsed.messages.length > 10) return "invalid-request";
+  if (parsed.tools !== undefined) {
+    if (!Array.isArray(parsed.tools) || parsed.tools.length > 1) return "invalid-request";
+    if (parsed.tools.some((tool) => ALLOWED_AI_TOOL_TYPES.indexOf(tool && tool.type) === -1)) return "invalid-request";
+  }
+  return null;
+}
+
 async function handleAiProxy(request, env, cors) {
   if (env.APP_TOKEN && request.headers.get("X-App-Token") !== env.APP_TOKEN) {
     return new Response("Forbidden", { status: 403, headers: cors });
@@ -374,13 +484,18 @@ async function handleAiProxy(request, env, cors) {
   if (!env.ANTHROPIC_API_KEY) {
     return new Response("Server misconfigured: ANTHROPIC_API_KEY secret not set", { status: 500, headers: cors });
   }
-  let body;
-  try {
-    body = await request.text();
-    JSON.parse(body);
-  } catch (e) {
+  const ip = clientIp(request);
+  if (!(await checkRateLimit(env, "ai-proxy", ip))) return json({ error: "rate-limited" }, 429, cors);
+
+  const body = await readJsonBody(request, MAX_AI_BODY);
+  if (body === null) {
     return new Response("Invalid JSON body", { status: 400, headers: cors });
   }
+  const validationError = validateAiRequest(body);
+  if (validationError) {
+    return json({ error: validationError }, 400, cors);
+  }
+  const bodyText = JSON.stringify(body);
   let upstream;
   try {
     upstream = await fetch("https://api.anthropic.com/v1/messages", {
@@ -390,7 +505,7 @@ async function handleAiProxy(request, env, cors) {
         "x-api-key": env.ANTHROPIC_API_KEY,
         "anthropic-version": ANTHROPIC_VERSION,
       },
-      body: body,
+      body: bodyText,
     });
   } catch (e) {
     return new Response("Upstream request failed: " + e.message, { status: 502, headers: cors });
@@ -415,6 +530,13 @@ export default {
     if (path === "/sync" && request.method === "GET") return handleGetSync(request, env, cors);
     if (path === "/sync" && request.method === "PUT") return handlePutSync(request, env, cors);
     if (path.startsWith("/auth/") || path === "/sync") {
+      return new Response("Method not allowed", { status: 405, headers: cors });
+    }
+
+    // Recipe sharing — public, unauthenticated, rate-limited on both ends (see above).
+    if (path === "/share" && request.method === "POST") return handleCreateShare(request, env, cors);
+    if (path.startsWith("/share/") && request.method === "GET") return handleGetShare(request, env, cors, path.slice("/share/".length));
+    if (path === "/share" || path.startsWith("/share/")) {
       return new Response("Method not allowed", { status: 405, headers: cors });
     }
 

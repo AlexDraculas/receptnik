@@ -113,12 +113,27 @@ function renderCardsInto(container, list, emptyEl, mode){
         })(s);
       }
       dropIn.appendChild(ratingRow);
+      var actionsRow = document.createElement("div");
+      actionsRow.className = "rn-card-actions";
       var startBtn = document.createElement("button");
       startBtn.className = "rn-3d c-coral rn-start-btn";
       startBtn.type = "button";
       startBtn.textContent = t("startBtn");
       startBtn.addEventListener("click", function(e){ e.stopPropagation(); startCooking(r); });
-      dropIn.appendChild(startBtn);
+      var shareBtn = document.createElement("button");
+      shareBtn.className = "rn-3d c-white rn-share-card-btn";
+      shareBtn.type = "button";
+      shareBtn.textContent = t("shareBtn");
+      var shareStatusEl = document.createElement("span");
+      shareStatusEl.className = "rn-link-status rn-share-card-status";
+      shareBtn.addEventListener("click", function(e){
+        e.stopPropagation();
+        shareRecipeFromCard(r, shareStatusEl, shareBtn);
+      });
+      actionsRow.appendChild(startBtn);
+      actionsRow.appendChild(shareBtn);
+      dropIn.appendChild(actionsRow);
+      dropIn.appendChild(shareStatusEl);
     }
     drop.appendChild(dropIn);
 
@@ -205,15 +220,24 @@ function renderLibrary(){
   elFavToggleIcon.textContent = filters.favoritesOnly ? "❤️" : "🤍";
   elFavToggleLabel.textContent = t("favToggleLabel") + (favCount > 0 ? " · " + favCount : "");
 
+  var query = (filters.query || "").trim().toLowerCase();
   var filtered = recipes.filter(function(r){
     if(filters.favoritesOnly && !r.favorite) return false;
     if(filters.cuisine !== "all" && r.cuisine !== filters.cuisine) return false;
     if(filters.style !== "all" && r.style !== filters.style) return false;
+    if(query){
+      var haystack = (r.name + " " + (r.description||"")).toLowerCase();
+      if(haystack.indexOf(query) === -1) return false;
+    }
     return true;
   });
   elCount.textContent = recipes.length ? countLabel(recipes.length) : "";
 
-  if(filtered.length === 0 && filters.favoritesOnly){
+  if(filtered.length === 0 && query){
+    elEmpty.querySelector(".rn-empty-emoji").textContent = "🔍";
+    elEmptyTitle.textContent = t("librarySearchEmptyTitle");
+    elEmptyBody.textContent = t("librarySearchEmptyBody");
+  } else if(filtered.length === 0 && filters.favoritesOnly){
     elEmpty.querySelector(".rn-empty-emoji").textContent = "💜";
     elEmptyTitle.textContent = t("favEmptyTitle");
     elEmptyBody.textContent = t("favEmptyBody");
@@ -228,6 +252,12 @@ elFavToggle.addEventListener("click", function(){
   filters.favoritesOnly = !filters.favoritesOnly;
   renderLibrary();
 });
+if(elLibrarySearch){
+  elLibrarySearch.addEventListener("input", function(){
+    filters.query = elLibrarySearch.value;
+    renderLibrary();
+  });
+}
 if(elHeroSeeAll){
   elHeroSeeAll.addEventListener("click", function(){
     elFavToggle.scrollIntoView({ behavior:"smooth", block:"start" });

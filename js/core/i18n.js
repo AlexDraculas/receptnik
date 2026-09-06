@@ -15,6 +15,8 @@ var I18N = {
     progressStreak:"дни серия", progressCooked:"сготвени", progressFavorites:"любими",
     formDifficultyLabel:"Трудност",
     difficultyEasy:"Лесна", difficultyMedium:"Средна", difficultyHard:"Трудна",
+    librarySearchPlaceholder:"Търси в твоите рецепти...",
+    librarySearchEmptyTitle:"Нищо не намерих", librarySearchEmptyBody:"Пробвай друга дума или провери правописа.",
     filterCuisineLabel:"Кухня", filterStyleLabel:"Стил",
     chipAllCuisines:"🌍 Всички", chipAllStyles:"🎲 Всички",
     sortLabel:"Подредба", sortRecent:"🕐 Скорошни", sortRating:"⭐ Оценка",
@@ -85,7 +87,13 @@ var I18N = {
     accountErrPasswordMismatch:"Паролите не съвпадат.", accountErrEmailTaken:"Вече има акаунт с този имейл — влез вместо да се регистрираш.",
     accountErrInvalidCredentials:"Грешен имейл или парола.", accountErrInvalidCode:"Грешен или изтекъл код.",
     accountErrRateLimited:"Твърде много опити. Изчакай малко и опитай пак.",
-    accountErrGeneric:"Нещо се обърка. Опитай пак.", accountLogoutConfirm:"Излязъл си от акаунта. Рецептите остават запазени на това устройство."
+    accountErrGeneric:"Нещо се обърка. Опитай пак.", accountLogoutConfirm:"Излязъл си от акаунта. Рецептите остават запазени на това устройство.",
+    shareBtn:"🔗 Сподели", shareCreating:"Създавам линк...", shareCopied:"Линкът е копиран! 🎉", shareLinkReady:"Линкът е готов:",
+    shareErrGeneric:"Не успях да създам линк. Опитай пак.", shareErrRateLimited:"Твърде много споделяния. Изчакай малко и опитай пак.",
+    shareViewLoading:"Зареждам сподeлената рецепта...", shareViewNotFound:"Тази споделена рецепта не съществува вече или линкът е грешен.",
+    shareViewErrGeneric:"Нещо се обърка при зареждането. Опитай пак по-късно.",
+    shareViewClose:"Затвори", shareViewBadge:"Споделена рецепта",
+    shareViewAddBtn:"➕ Добави в моята библиотека", shareViewAdded:"Добавена в библиотеката! ✓", shareViewOpenLibrary:"Виж в библиотеката"
   },
   en:{
     brandTitle:"Cookly",
@@ -96,6 +104,8 @@ var I18N = {
     progressStreak:"day streak", progressCooked:"cooked", progressFavorites:"favorites",
     formDifficultyLabel:"Difficulty",
     difficultyEasy:"Easy", difficultyMedium:"Medium", difficultyHard:"Hard",
+    librarySearchPlaceholder:"Search your recipes...",
+    librarySearchEmptyTitle:"No matches", librarySearchEmptyBody:"Try a different word or check the spelling.",
     filterCuisineLabel:"Cuisine", filterStyleLabel:"Style",
     chipAllCuisines:"🌍 All", chipAllStyles:"🎲 All",
     sortLabel:"Sort by", sortRecent:"🕐 Recent", sortRating:"⭐ Rating",
@@ -166,7 +176,13 @@ var I18N = {
     accountErrPasswordMismatch:"Passwords don't match.", accountErrEmailTaken:"That email already has an account — log in instead.",
     accountErrInvalidCredentials:"Wrong email or password.", accountErrInvalidCode:"Wrong or expired code.",
     accountErrRateLimited:"Too many attempts. Please wait a bit and try again.",
-    accountErrGeneric:"Something went wrong. Please try again.", accountLogoutConfirm:"Signed out. Your recipes are still saved on this device."
+    accountErrGeneric:"Something went wrong. Please try again.", accountLogoutConfirm:"Signed out. Your recipes are still saved on this device.",
+    shareBtn:"🔗 Share", shareCreating:"Creating a link...", shareCopied:"Link copied! 🎉", shareLinkReady:"Your link is ready:",
+    shareErrGeneric:"Couldn't create a link. Please try again.", shareErrRateLimited:"Too many shares. Please wait a bit and try again.",
+    shareViewLoading:"Loading the shared recipe...", shareViewNotFound:"This shared recipe no longer exists, or the link is wrong.",
+    shareViewErrGeneric:"Something went wrong loading it. Please try again later.",
+    shareViewClose:"Close", shareViewBadge:"Shared recipe",
+    shareViewAddBtn:"➕ Add to my library", shareViewAdded:"Added to your library! ✓", shareViewOpenLibrary:"View in library"
   }
 };
 function t(key){ return (I18N[LANG] && I18N[LANG][key]) || (I18N.bg[key] || key); }
