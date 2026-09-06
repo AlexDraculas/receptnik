@@ -113,12 +113,27 @@ function renderCardsInto(container, list, emptyEl, mode){
         })(s);
       }
       dropIn.appendChild(ratingRow);
+      var actionsRow = document.createElement("div");
+      actionsRow.className = "rn-card-actions";
       var startBtn = document.createElement("button");
       startBtn.className = "rn-3d c-coral rn-start-btn";
       startBtn.type = "button";
       startBtn.textContent = t("startBtn");
       startBtn.addEventListener("click", function(e){ e.stopPropagation(); startCooking(r); });
-      dropIn.appendChild(startBtn);
+      var shareBtn = document.createElement("button");
+      shareBtn.className = "rn-3d c-white rn-share-card-btn";
+      shareBtn.type = "button";
+      shareBtn.textContent = t("shareBtn");
+      var shareStatusEl = document.createElement("span");
+      shareStatusEl.className = "rn-link-status rn-share-card-status";
+      shareBtn.addEventListener("click", function(e){
+        e.stopPropagation();
+        shareRecipeFromCard(r, shareStatusEl, shareBtn);
+      });
+      actionsRow.appendChild(startBtn);
+      actionsRow.appendChild(shareBtn);
+      dropIn.appendChild(actionsRow);
+      dropIn.appendChild(shareStatusEl);
     }
     drop.appendChild(dropIn);
 

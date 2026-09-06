@@ -45,6 +45,7 @@ Promise.all([loadLang(), loadTheme(), loadStats(), loadProfile(), loadAuth()]).t
   updateStreakBadge();
   showLibrary();
   renderAccountState();
+  maybeOpenSharedRecipeFromUrl();
   return authToken ? syncPull() : Promise.resolve();
 }).then(function(){
   syncBootDone = true;

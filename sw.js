@@ -20,6 +20,7 @@ const APP_SHELL = [
   "js/core/api.js",
   "js/timer/timer.js",
   "js/recipes/library.js",
+  "js/recipes/share.js",
   "js/recipes/cart.js",
   "js/recipes/search.js",
   "js/recipes/add-recipe.js",

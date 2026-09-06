@@ -53,6 +53,11 @@ var elNextBtn = $("rnNextBtn"), elNextLabel = $("rnNextLabel"), elBackBtn = $("r
 
 var elFinish = $("rnFinish"), elFinishMsg = $("rnFinishMsg"), elFinishLang = $("rnFinishLang"), elFinishClose = $("rnFinishClose");
 
+var elShareView = $("rnShareView"), elShareCloseBtn = $("rnShareCloseBtn"), elShareStatus = $("rnShareStatus");
+var elShareRecipe = $("rnShareRecipe"), elShareMedallion = $("rnShareMedallion"), elShareName = $("rnShareName");
+var elShareMeta = $("rnShareMeta"), elShareDesc = $("rnShareDesc"), elShareIngList = $("rnShareIngList");
+var elShareStepList = $("rnShareStepList"), elShareAddBtn = $("rnShareAddBtn");
+
 var RING_CIRC = 2 * Math.PI * 64;
 
 function escapeHtml(s){

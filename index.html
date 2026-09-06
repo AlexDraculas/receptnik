@@ -366,6 +366,28 @@
     <p class="rn-finish-lang" id="rnFinishLang"></p>
     <button class="rn-3d c-white" id="rnFinishClose" style="padding:13px 24px;" data-i18n="finishBackBtn">Към рецептите 📖</button>
   </div>
+
+  <!-- SHARED RECIPE VIEW (opened via ?share=<id> in the URL, or after tapping a share link) -->
+  <div class="rn-share-view" id="rnShareView">
+    <div class="rn-share-top">
+      <span class="rn-share-badge" data-i18n="shareViewBadge">Споделена рецепта</span>
+      <button class="rn-cook-close" id="rnShareCloseBtn" aria-label="Close">&times;</button>
+    </div>
+    <div class="rn-share-body">
+      <div class="rn-share-status" id="rnShareStatus"></div>
+      <div class="rn-share-recipe" id="rnShareRecipe" hidden>
+        <div class="rn-medallion rn-share-medallion" id="rnShareMedallion"></div>
+        <p class="rn-share-name" id="rnShareName"></p>
+        <div class="rn-share-meta" id="rnShareMeta"></div>
+        <p class="rn-share-desc" id="rnShareDesc"></p>
+        <h3 class="rn-share-subhead" data-i18n="subheadIngredients">🧺 Продукти</h3>
+        <ul class="rn-share-ing-list" id="rnShareIngList"></ul>
+        <h3 class="rn-share-subhead" data-i18n="subheadSteps">📋 Стъпки</h3>
+        <ol class="rn-share-step-list" id="rnShareStepList"></ol>
+        <button type="button" class="rn-3d c-gold rn-share-add-btn" id="rnShareAddBtn" data-i18n="shareViewAddBtn">➕ Добави в моята библиотека</button>
+      </div>
+    </div>
+  </div>
 </div>
 </div>
 
@@ -376,6 +398,7 @@
   <script src="js/core/api.js"></script>
   <script src="js/timer/timer.js"></script>
   <script src="js/recipes/library.js"></script>
+  <script src="js/recipes/share.js"></script>
   <script src="js/recipes/cart.js"></script>
   <script src="js/recipes/search.js"></script>
   <script src="js/recipes/add-recipe.js"></script>

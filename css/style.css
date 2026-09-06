@@ -400,6 +400,9 @@
   .rn-card-desc{ font-size:13.5px; line-height:1.5; color:var(--text-body); margin:0 0 10px; }
   .rn-card-time{ font-size:12px; color:var(--muted); font-weight:700; margin-bottom:12px; display:flex; gap:10px; flex-wrap:wrap; }
   .rn-start-btn{ padding:10px 20px; font-size:14px; }
+  .rn-card-actions{ display:flex; gap:8px; flex-wrap:wrap; }
+  .rn-share-card-btn{ padding:10px 16px; font-size:14px; }
+  .rn-share-card-status{ display:block; width:100%; }
 
   .rn-my-rating{ display:flex; align-items:center; gap:3px; margin-bottom:12px; }
   .rn-my-rating-label{ font-size:11.5px; font-weight:800; color:var(--muted); margin-right:6px; }
@@ -457,6 +460,7 @@
   .rn-link-status{ margin-top:14px; font-size:13.5px; font-weight:700; min-height:20px; }
   .rn-link-status.is-error{ color:var(--coral-d); }
   .rn-link-status.is-loading{ color:var(--violet-2); }
+  .rn-link-status.is-success{ color:var(--mint-d); }
   .rn-spin{ display:inline-block; width:14px; height:14px; border-radius:50%; border:2px solid #D9CFFA; border-top-color:var(--violet-2); margin-right:6px; vertical-align:-2px; animation: rnSpin .7s linear infinite; }
 
   /* ---------- cooking overlay ---------- */
@@ -528,6 +532,33 @@
   .rn-finish-msg{ font-family:'Fredoka', sans-serif; font-size:clamp(28px,7.5vw,42px); margin:0 0 8px; color:#fff; animation: rnBounceIn .5s ease; text-shadow:0 4px 12px rgba(0,0,0,.2); }
   .rn-finish-lang{ font-size:13px; color:#EAE0FB; font-weight:700; margin:0 0 30px; }
   .rn-confetti{ position:absolute; top:-10px; width:9px; height:14px; border-radius:2px; animation: rnConfettiFall linear forwards; }
+
+  /* ---------- shared-recipe overlay (opened via ?share=<id>) ---------- */
+  .rn-share-view{
+    position:absolute; inset:0; z-index:32;
+    background:var(--paper-soft, #F3EFFC);
+    display:none; flex-direction:column;
+  }
+  .rn-share-view.is-open{ display:flex; }
+  .rn-share-top{
+    flex:none; display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:16px; background:linear-gradient(165deg, var(--violet-1), var(--violet-3));
+  }
+  .rn-share-badge{ font-family:'Fredoka', sans-serif; font-weight:600; font-size:13.5px; color:#fff; letter-spacing:.02em; }
+  .rn-share-body{ flex:1; overflow-y:auto; padding:22px 18px 40px; }
+  .rn-share-status{ text-align:center; margin-top:40px; font-size:14.5px; font-weight:700; color:var(--text-body); }
+  .rn-share-status.is-error{ color:var(--coral-d); }
+  .rn-share-status.is-loading{ color:var(--violet-2); }
+  .rn-share-recipe{ max-width:480px; margin:0 auto; }
+  .rn-share-medallion{ width:64px; height:64px; border-radius:var(--r-lg); display:flex; align-items:center; justify-content:center; font-size:30px; margin:0 auto 14px; }
+  .rn-share-name{ font-family:'Fredoka', sans-serif; font-weight:600; font-size:22px; text-align:center; color:var(--ink); margin:0 0 6px; }
+  .rn-share-meta{ text-align:center; font-size:12.5px; font-weight:700; color:var(--muted); margin-bottom:14px; }
+  .rn-share-desc{ font-size:14px; line-height:1.5; color:var(--text-body); text-align:center; margin:0 0 20px; }
+  .rn-share-desc[hidden]{ display:none; }
+  .rn-share-subhead{ font-family:'Fredoka', sans-serif; font-size:14px; font-weight:600; color:var(--ink); margin:18px 0 8px; }
+  .rn-share-ing-list, .rn-share-step-list{ margin:0; padding-left:20px; }
+  .rn-share-ing-list li, .rn-share-step-list li{ font-size:14px; line-height:1.6; color:var(--text-body); margin-bottom:4px; }
+  .rn-share-add-btn{ display:block; width:100%; margin-top:22px; padding:14px; font-size:15px; }
 
   @keyframes rnPopIn{ from{opacity:0; transform:translateY(12px) scale(.97);} to{opacity:1; transform:translateY(0) scale(1);} }
   @keyframes rnBounceIn{ 0%{opacity:0; transform:scale(.5);} 65%{opacity:1; transform:scale(1.08);} 100%{transform:scale(1);} }
